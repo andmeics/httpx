@@ -9,31 +9,21 @@ import (
 )
 
 const (
-	DefaultBatchSize = 100
-
+	DefaultBatchSize     = 100
 	DefaultFlushInterval = time.Minute
-
-	DefaultTableName = "results"
-
-	DefaultDatabaseName = "httpx"
-
-	EnvConnectionString = "HTTPX_DB_CONNECTION_STRING"
+	DefaultTableName     = "results"
+	DefaultDatabaseName  = "httpx"
+	EnvConnectionString  = "HTTPX_DB_CONNECTION_STRING"
 )
 
 type Config struct {
-	Type DatabaseType `yaml:"type"`
-
-	ConnectionString string `yaml:"connection-string"`
-
-	DatabaseName string `yaml:"database-name"`
-
-	TableName string `yaml:"table-name"`
-
-	BatchSize int `yaml:"batch-size"`
-
-	FlushInterval time.Duration `yaml:"flush-interval"`
-
-	OmitRaw bool `yaml:"omit-raw"`
+	Type             DatabaseType  `yaml:"type"`
+	ConnectionString string        `yaml:"connection-string"`
+	DatabaseName     string        `yaml:"database-name"`
+	TableName        string        `yaml:"table-name"`
+	BatchSize        int           `yaml:"batch-size"`
+	FlushInterval    time.Duration `yaml:"flush-interval"`
+	OmitRaw          bool          `yaml:"omit-raw"`
 }
 
 func (c *Config) Validate() error {
