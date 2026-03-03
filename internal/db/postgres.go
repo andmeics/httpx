@@ -220,7 +220,7 @@ func (p *postgresDatabase) InsertBatch(ctx context.Context, results []runner.Res
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer stmt.Close() //nolint:errcheck
 
 	for _, r := range results {
 		hashJSON, _ := json.Marshal(r.Hashes)
