@@ -201,7 +201,8 @@ type Options struct {
 	OutputMatchStatusCode     string
 	OutputMatchContentLength  string
 	OutputFilterStatusCode    string
-	OutputFilterErrorPage     bool
+	// Deprecated: use OutputFilterPageType with "error" instead.
+	OutputFilterErrorPage bool
 	OutputFilterPageType      goflags.StringSlice
 	FilterOutDuplicates       bool
 	OutputFilterContentLength string

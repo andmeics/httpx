@@ -667,7 +667,7 @@ func (r *Runner) classifyPage(headlessBody, body string, pHash uint64) map[strin
 	if err != nil {
 		return kb
 	}
-	kb["PageType"] = result.Type
+	kb["PageType"] = fmt.Sprint(result.Type)
 	if len(result.Forms) > 0 {
 		kb["Forms"] = result.Forms
 	}
