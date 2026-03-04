@@ -212,7 +212,9 @@ func (m *mysqlDatabase) InsertBatch(ctx context.Context, results []runner.Result
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	for _, r := range results {
 		aJSON, _ := json.Marshal(r.A)
