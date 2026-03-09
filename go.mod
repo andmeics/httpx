@@ -59,7 +59,7 @@ require (
 	github.com/projectdiscovery/awesome-search-queries v0.0.0-20260104120501-961ef30f7193
 	github.com/seh-msft/burpxml v1.0.1
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
-	go.mongodb.org/mongo-driver v1.17.6
+	go.mongodb.org/mongo-driver v1.17.9
 	gopkg.in/yaml.v3 v3.0.1
 )
 
