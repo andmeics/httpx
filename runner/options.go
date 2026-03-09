@@ -201,7 +201,9 @@ type Options struct {
 	OutputMatchStatusCode     string
 	OutputMatchContentLength  string
 	OutputFilterStatusCode    string
-	OutputFilterErrorPage     bool
+	// Deprecated: use OutputFilterPageType with "error" instead.
+	OutputFilterErrorPage bool
+	OutputFilterPageType      goflags.StringSlice
 	FilterOutDuplicates       bool
 	OutputFilterContentLength string
 	InputRawRequest           string
@@ -228,6 +230,7 @@ type Options struct {
 	RespectHSTS               bool
 	StoreResponse             bool
 	JSONOutput                bool
+	MarkDownOutput            bool
 	CSVOutput                 bool
 	CSVOutputEncoding         string
 	PdcpAuth                  string
@@ -361,6 +364,15 @@ type Options struct {
 
 	Trace bool
 
+	ResultDatabase          bool
+	ResultDatabaseConfig    string
+	ResultDatabaseType      string
+	ResultDatabaseConnStr   string
+	ResultDatabaseName      string
+	ResultDatabaseTable     string
+	ResultDatabaseBatchSize int
+	ResultDatabaseOmitRaw   bool
+
 	// Optional pre-created objects to reduce allocations
 	Wappalyzer     *wappalyzer.Wappalyze
 	Networkpolicy  *networkpolicy.NetworkPolicy
@@ -442,7 +454,8 @@ func ParseOptions() *Options {
 
 	flagSet.CreateGroup("filters", "Filters",
 		flagSet.StringVarP(&options.OutputFilterStatusCode, "filter-code", "fc", "", "filter response with specified status code (-fc 403,401)"),
-		flagSet.BoolVarP(&options.OutputFilterErrorPage, "filter-error-page", "fep", false, "filter response with ML based error page detection"),
+		flagSet.StringSliceVarP(&options.OutputFilterPageType, "filter-page-type", "fpt", nil, "filter response with specified page type (e.g. -fpt login,captcha,parked)", goflags.CommaSeparatedStringSliceOptions),
+		flagSet.BoolVarP(&options.OutputFilterErrorPage, "filter-error-page", "fep", false, "[DEPRECATED: use -fpt] filter response with ML based error page detection"),
 		flagSet.BoolVarP(&options.FilterOutDuplicates, "filter-duplicates", "fd", false, "filter out near-duplicate responses (only first response is retained)"),
 		flagSet.StringVarP(&options.OutputFilterContentLength, "filter-length", "fl", "", "filter response with specified content length (-fl 23,33)"),
 		flagSet.StringVarP(&options.OutputFilterLinesCount, "filter-line-count", "flc", "", "filter response body with specified line count (-flc 423,532)"),
@@ -491,6 +504,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.CSVOutput, "csv", false, "store output in csv format"),
 		flagSet.StringVarP(&options.CSVOutputEncoding, "csv-output-encoding", "csvo", "", "define output encoding"),
 		flagSet.BoolVarP(&options.JSONOutput, "json", "j", false, "store output in JSONL(ines) format"),
+		flagSet.BoolVarP(&options.MarkDownOutput, "markdown", "md", false, "store output in Markdown table format"),
 		flagSet.BoolVarP(&options.ResponseHeadersInStdout, "include-response-header", "irh", false, "include http response (headers) in JSON output (-json only)"),
 		flagSet.BoolVarP(&options.ResponseInStdout, "include-response", "irr", false, "include http request/response (headers + body) in JSON output (-json only)"),
 		flagSet.BoolVarP(&options.Base64ResponseInStdout, "include-response-base64", "irrb", false, "include base64 encoded http request/response in JSON output (-json only)"),
@@ -499,6 +513,14 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.StoreVisionReconClusters, "store-vision-recon-cluster", "svrc", false, "include visual recon clusters (-ss and -sr only)"),
 		flagSet.StringVarP(&options.Protocol, "protocol", "pr", "", "protocol to use (unknown, http11, http2 [experimental], http3 [experimental])"),
 		flagSet.StringVarP(&options.OutputFilterErrorPagePath, "filter-error-page-path", "fepp", "filtered_error_page.json", "path to store filtered error pages"),
+		flagSet.BoolVarP(&options.ResultDatabase, "result-db", "rdb", false, "store results in database"),
+		flagSet.StringVarP(&options.ResultDatabaseConfig, "result-db-config", "rdbc", "", "path to database config file"),
+		flagSet.StringVarP(&options.ResultDatabaseType, "result-db-type", "rdbt", "", "database type (mongodb, postgres, mysql)"),
+		flagSet.StringVarEnv(&options.ResultDatabaseConnStr, "result-db-conn", "rdbcs", "", "HTTPX_DB_CONNECTION_STRING", "database connection string"),
+		flagSet.StringVarP(&options.ResultDatabaseName, "result-db-name", "rdbn", "httpx", "database name"),
+		flagSet.StringVarP(&options.ResultDatabaseTable, "result-db-table", "rdbtb", "results", "table/collection name"),
+		flagSet.IntVarP(&options.ResultDatabaseBatchSize, "result-db-batch-size", "rdbbs", 100, "batch size for database inserts"),
+		flagSet.BoolVarP(&options.ResultDatabaseOmitRaw, "result-db-omit-raw", "rdbor", false, "omit raw request/response data from database"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -760,9 +782,22 @@ func (options *Options) ValidateOptions() error {
 				return errors.Wrapf(err, "Couldn't process resolver file \"%s\"", resolver)
 			}
 			for line := range chFile {
-				resolvers = append(resolvers, line)
+				line = strings.TrimSpace(line)
+				if line != "" && strings.Contains(line, ",") {
+					for item := range strings.SplitSeq(line, ",") {
+						item = strings.TrimSpace(item)
+						if item != "" {
+							resolvers = append(resolvers, item)
+						}
+					}
+				} else if line != "" {
+					resolvers = append(resolvers, line)
+				}
 			}
 		} else {
+			if strings.ContainsAny(resolver, `/\`) {
+				gologger.Warning().Msgf("Resolver argument \"%s\" looks like a file path but the file does not exist", resolver)
+			}
 			resolvers = append(resolvers, resolver)
 		}
 	}
@@ -854,6 +889,10 @@ func (options *Options) configureOutput() {
 	}
 	if options.CSVOutputEncoding != "" {
 		options.CSVOutput = true
+	}
+	if options.OutputFilterErrorPage && len(options.OutputFilterPageType) == 0 {
+		gologger.Info().Msg("-fep is deprecated, use -fpt error instead")
+		options.OutputFilterPageType = goflags.StringSlice{"error"}
 	}
 }
 
