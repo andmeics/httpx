@@ -55,7 +55,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/happyhackingspace/dit v0.0.9
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.2
 	github.com/projectdiscovery/awesome-search-queries v0.0.0-20260104120501-961ef30f7193
 	github.com/seh-msft/burpxml v1.0.1
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
